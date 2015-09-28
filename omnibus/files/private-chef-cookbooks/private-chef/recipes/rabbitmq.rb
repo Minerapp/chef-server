@@ -78,6 +78,7 @@ component_runit_service "rabbitmq"
 
 if is_data_master?
   rmq_ctl = "/opt/opscode/embedded/bin/rabbitmqctl"
+  rmq_plugins = "/opt/opscode/embedded/bin/rabbitmq-plugins"
   opc_ctl = "/opt/opscode/bin/private-chef-ctl"
   opc_username = OmnibusHelper.new(node).ownership['owner']
   rmq_ctl_chpost = "/opt/opscode/embedded/bin/chpst -u #{opc_username} -U #{opc_username} #{rmq_ctl}"
@@ -122,6 +123,14 @@ if is_data_master?
     retries 10
   end
 
+
+  execute "#{rmq_ctl} add_user #{rabbitmq['management_user']} #{rabbitmq['management_password']}" do
+    environment (rabbitmq_env)
+    user opc_username
+    not_if "#{rmq_ctl_chpost} list_users |grep #{rabbitmq['management_user']}", :environment => rabbitmq_env, :user => "root"
+    retries 10
+  end
+
   #
 
   # grant the mapper user the ability to do anything with the /chef vhost
@@ -161,4 +170,41 @@ if is_data_master?
     not_if "#{rmq_ctl_chpost} list_user_permissions #{rabbitmq['actions_user']}|grep #{rabbitmq['actions_vhost']}", :environment => rabbitmq_env, :user => "root"
     retries 10
   end
+
+
+  execute "#{rmq_ctl} set_permissions -p #{rabbitmq['actions_vhost']} #{rabbitmq['management_user']} \".*\" \".*\" \".*\"" do
+    environment (rabbitmq_env)
+    user opc_username
+    #not_if "#{rmq_ctl_chpost} list_user_permissions #{rabbitmq['management_user']}|grep #{rabbitmq['actions_vhost']}", :environment => rabbitmq_env, :user => "root"
+    retries 10
+  end
+
+  execute "#{rmq_ctl} set_permissions -p / #{rabbitmq['management_user']} \".*\" \".*\" \".*\"" do
+    environment (rabbitmq_env)
+    user opc_username
+    #not_if "#{rmq_ctl_chpost} list_user_permissions #{rabbitmq['management_user']}|grep #{rabbitmq['actions_vhost']}", :environment => rabbitmq_env, :user => "root"
+    retries 10
+  end
+
+  execute "#{rmq_plugins} enable rabbitmq_management" do
+    environment (rabbitmq_env)
+    user opc_username
+    retries 10
+  end
+
+  execute "#{rmq_ctl} set_user_tags #{rabbitmq['management_user']} administrator" do
+    environment (rabbitmq_env)
+    user opc_username
+    #not_if "#{rmq_ctl_chpost} list_user_permissions #{rabbitmq['management_user']}|grep #{rabbitmq['actions_vhost']}", :environment => rabbitmq_env, :user => "root"
+    retries 10
+  end
+
+
+  execute "#{rmq_ctl} set_policy -p /analytics max_length '(erchef|alaska|notifier.notifications|notifier_config)' '{\"max-length\":#{rabbitmq['max_length']}}' --apply-to queues" do
+    environment (rabbitmq_env)
+    user opc_username
+    #not_if "#{rmq_ctl_chpost} list_user_permissions #{rabbitmq['management_user']}|grep #{rabbitmq['actions_vhost']}", :environment => rabbitmq_env, :user => "root"
+    retries 10
+  end
+
 end

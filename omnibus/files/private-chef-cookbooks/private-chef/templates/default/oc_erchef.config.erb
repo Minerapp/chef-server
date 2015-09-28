@@ -102,7 +102,11 @@
               {actions_vhost, <<"<%= @actions_vhost %>">>},
               {actions_exchange, <<"<%= @actions_exchange %>">>},
               {actions_fqdn, <<"<%= node['private_chef']['lb']['api_fqdn'] %>">>},
-
+              {rabbitmq_management_user, <<"<%= @node['private_chef']['rabbitmq']['management_user'] %>">>},
+              {rabbitmq_management_port, <%= @node['private_chef']['rabbitmq']['management_port'] %>},
+              {rabbitmq_management_password, <<"<%= @node['private_chef']['rabbitmq']['management_password'] %>">>},
+              {rabbitmq_queue_length_monitor_enabled, <%= @node['private_chef']['rabbitmq']['queue_length_monitor_enable'] %>},
+              {rabbitmq_queue_length_monitor_millis, <%= @node['private_chef']['rabbitmq']['queue_length_monitor_millis'] %> },
               {max_request_size, <%= node['private_chef']['opscode-erchef']['max_request_size'] %>},
               {server_version, "<%= node['private_chef']['version'] %>"},
               {health_ping_timeout, 400},

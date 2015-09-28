@@ -116,6 +116,15 @@ default['private_chef']['rabbitmq']['vip'] = '127.0.0.1'
 default['private_chef']['rabbitmq']['consumer_id'] = 'hotsauce'
 default['private_chef']['rabbitmq']['env_path'] = "/opt/opscode/bin:/opt/opscode/embedded/bin:/usr/bin:/bin"
 
+default['private_chef']['rabbitmq']['max_length'] = 100000
+default['private_chef']['rabbitmq']['management_user'] = "rabbitmgmt"
+default['private_chef']['rabbitmq']['management_password'] = "chefrocks"
+default['private_chef']['rabbitmq']['management_port'] = '15672'
+default['private_chef']['rabbitmq']['management_enabled'] = true
+
+default['private_chef']['rabbitmq']['queue_length_monitor_enable'] = true
+default['private_chef']['rabbitmq']['queue_length_monitor_millis'] = 5000
+
 ####
 # External RabbitMQ
 ####
