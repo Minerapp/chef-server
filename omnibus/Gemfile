@@ -3,11 +3,12 @@ source 'https://rubygems.org'
 gem 'rake'
 gem 'chefspec'
 gem 'berkshelf'
+gem 'celluloid', '0.16.0'
 
 # Install omnibus software
 group :omnibus do
   gem 'omnibus', github: 'chef/omnibus'
-  gem 'omnibus-software', github: 'chef/omnibus-software'
+  gem 'omnibus-software', github: 'chef/omnibus-software', branch: 'tc/fix-ohai'
 end
 
 group :test do
