@@ -317,7 +317,7 @@ post_multi_test_() ->
      ]}.
 
 
-api_test_() ->
+solr_api_test_() ->
     MinItem = {[{<<"key1">>, <<"value1">>},
                 {<<"key2">>, <<"value2">>}]},
     {foreach,
@@ -355,6 +355,47 @@ api_test_() ->
      end]
     }.
 
+cloudsearch_api_test_() ->
+    MinItem = {[{<<"key1">>, <<"value1">>},
+                {<<"key2">>, <<"value2">>}]},
+    {foreach,
+     fun() ->
+             application:set_env(chef_index, search_provider, cloudsearch),
+             meck:new(chef_index_http, [])
+     end,
+     fun(_) ->
+             application:set_env(chef_index, search_provider, solr),
+             meck:unload()
+     end,
+     [fun(_) ->
+              [{"send_item",
+                fun() ->
+                        Expect = cs_send_item_xml_expect(),
+                        meck:expect(chef_index_http, request,
+                                    fun("update", post, Doc) ->
+                                            ?assertEqual(Expect, Doc),
+                                            {ok, "200", [], []}
+                                    end),
+                        AddDoc = chef_index_expand:doc_for_index(role, <<"a1">>, <<"db1">>, MinItem),
+                        ?assertEqual(ok, chef_index_expand:send_item(AddDoc))
+                end},
+               {"send_delete",
+                fun() ->
+                        Expect = cs_send_delete_xml_expect(),
+                        meck:expect(chef_index_http, request,
+                                    fun("update", post, Doc) ->
+                                            ?assertEqual(Expect, Doc),
+                                            {ok, "200", [], []}
+                                    end),
+                        DelDoc = chef_index_expand:doc_for_delete(role, <<"a5">>, <<"db3">>),
+                        ?assertEqual(ok, chef_index_expand:send_delete(DelDoc))
+                end
+               }
+              ]
+     end]
+    }.
+
+
 send_delete_xml_expect() ->
     <<"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
       "<update>"
@@ -379,6 +420,27 @@ send_item_xml_expect() ->
       "</doc>"
       "</add>"
       "</update>">>.
+
+cs_send_delete_xml_expect() ->
+    <<"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+      "<batch>"
+      "<delete id=\"a5\" />"
+      "</batch>">>.
+
+cs_send_item_xml_expect() ->
+    <<"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+      "<batch>"
+      "<add id=\"a1\">"
+      "<field name=\"x_chef_id_chef_x\">a1</field>"
+      "<field name=\"x_chef_database_chef_x\">chef_db1</field>"
+      "<field name=\"x_chef_type_chef_x\">role</field>"
+      "<field name=\"content\">"
+      "key1__=__value1 key2__=__value2 "
+      "x_chef_database_chef_x__=__chef_db1 "
+      "x_chef_id_chef_x__=__a1 "
+      "x_chef_type_chef_x__=__role </field>"
+      "</add>"
+      "</batch>">>.
 
 multi_update_xml_expect() ->
     %% See http://wiki.apache.org/solr/UpdateXmlMessages
